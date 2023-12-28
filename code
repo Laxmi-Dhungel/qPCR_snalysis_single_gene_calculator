@@ -1,0 +1,78 @@
+import scipy.stats as stats 
+print("Make sure of the following:")
+print("1. You have 'target section' in column 3, 'sample' in column 5 and 'ct' in column 6")
+print("2. All of the controls are labeled same")
+user_input=True
+while user_input:
+	inf=input("Please enter the file name: ")
+	f=open(inf,'r')
+	f.readline()
+	list_HKG_cont1_ct=[]
+	list_target_gene_cont1_ct=[]
+	list_HKG_sample1_ct=[]
+	list_target_gene_sample1_ct=[]
+	HKG=input("Please enter the House keeping gene: ")
+	target_gene_1=input("Please enter the target gene: ")
+	cont1=input("Please enter the control: ")
+	sample1=input("Please enter the test sample: ")
+	for line in f:
+		line=line.strip()
+		field=line.split(',')
+		field[5]=float(field[5])
+		if field[2]==HKG and field[4]==cont1:
+			list_HKG_cont1_ct.append(field[5])
+		elif field[2]==target_gene_1 and field[4]==cont1:
+			list_target_gene_cont1_ct.append(field[5])
+		elif field[2]==HKG and field[4]==sample1:
+			list_HKG_sample1_ct.append(field[5])
+		elif field[2]==target_gene_1 and field[4]==sample1:
+			list_target_gene_sample1_ct.append(field[5])
+	mean_ct_HKG_cont=0# calculation of mean ct for HKG for control
+	for item in list_HKG_cont1_ct:
+		mean_ct_HKG_cont+=float(item)
+	mean_ct_HKG_cont/=len(list_HKG_cont1_ct)
+	mean_ct_target_gene_cont=0
+	for item in list_target_gene_cont1_ct:#calculation of mean ct for target gene
+		mean_ct_target_gene_cont+=float(item)
+	mean_ct_target_gene_cont/=len(list_target_gene_cont1_ct)
+	dct_cont=mean_ct_target_gene_cont-mean_ct_HKG_cont#dct calculation for control is mean ct of target gene minus mean ct of house keeping gene of control
+	mean_ct_HKG_sample=0#Calculation of mean ct for HKG of sample
+	for item in list_HKG_sample1_ct:
+		mean_ct_HKG_sample+=float(item)
+	mean_ct_HKG_sample/=len(list_HKG_sample1_ct)
+	sd_ct_HKG_sample=0
+	for item in list_HKG_sample1_ct:#calculation of standard deviation for ct of samples for HKG
+		item_sub_mean=float(item)-mean_ct_HKG_sample
+		sd_ct_HKG_sample+=(item_sub_mean)**2
+	std_ct_HKG_sample=((sd_ct_HKG_sample)/(len(list_HKG_sample1_ct)-1))**0.5
+	mean_ct_target_gene_sample=0
+	for item in list_target_gene_sample1_ct:#calculation of mean ct for target gene of sample
+		mean_ct_target_gene_sample+=float(item)
+	mean_ct_target_gene_sample/=len(list_target_gene_sample1_ct)
+	sd_ct_target_gene_sample=0#calculation of standard deciation of ct for target gene of sample
+	for item in list_target_gene_sample1_ct:
+		item_sub_mean=float(item)-mean_ct_target_gene_sample
+		sd_ct_target_gene_sample+=(item_sub_mean)**2
+	std_ct_target_gene_sample=((sd_ct_target_gene_sample)/(len(list_target_gene_sample1_ct)-1))**0.5
+	tot_std_ct_sample=((std_ct_target_gene_sample)**2+(std_ct_HKG_sample)**2)**0.5#total standard deviation for sample given by sqrt((sd_target gene)^2+(sd_HKG)^)2)
+	dct_sample=mean_ct_target_gene_sample-mean_ct_HKG_sample#dct for sample given by mean ct target gene minus mean ct HKG for sample
+	ddct=dct_sample-dct_cont#dct given by dct sample minus dct control
+	ddct_add_sd=ddct+tot_std_ct_sample#ddct add total standard deviation
+	ddct_sub_sd=ddct-tot_std_ct_sample#ddct minus total standard deviation
+	fold_change_1=2**(-ddct_add_sd)#fold change given by: 2^(-ddct_addsd)(1)
+	fold_change_2=2**(-ddct_sub_sd)#fold change given by:2^(-ddct_subsd)(2)
+	print("The fold change for the sample compared to control is:",str(round(fold_change_1,3)),"(add sd) and", str(round(fold_change_2,3)), "(sub sd)")
+	#for p value calculation for control sample
+	#dct calculation for control: list_target_gene_cont1_ct-list_HKG_cont1_ct (target(control)-HKG(Control)
+	dct_pvalue_cont=[i - j for i, j in zip(list_target_gene_cont1_ct,list_HKG_cont1_ct )]
+	#print('The dct value for control is: ', dct_pvalue_cont)
+	dct_pvalue_test_sample=[k - l for k, l in zip(list_target_gene_sample1_ct,list_HKG_sample1_ct )]
+	#print('The dct value for test sample is: ', dct_pvalue_test_sample)
+	ttest=stats.ttest_ind(dct_pvalue_cont,dct_pvalue_test_sample,equal_var=False)
+	print('The t-test result is: ', ttest)
+	continue_input=input("Type 'y' if you want to analyze next set of data from same file: ")
+	if continue_input=='y':
+		user_input=True
+	else:
+		user_input=False
+	f.close()
