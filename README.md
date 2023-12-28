@@ -1,4 +1,4 @@
-# qPCR_snalysis_single_gene_calculator
+# qPCR_analysis_single_gene_calculator
 This code works like a calculator to determine a fold change in gene expression in a sample of interest compared to control. It requires information on reference gene, target gene, control sample and test sample as an input and will give the fold change (+/- sd) with p-value (comparing dct for each sample) as an output. The csv file format for the data is as shown below. This is my first code; I did not use pandas at that time. Hence, this is based on column number and requires 'target section' in column 3, 'sample' in column 5 and 'ct' in column 6. After user provide required input, the information obtained on fold change and significant difference can be written on excel sheet that can be used for further analysis. The user will be asked if they want to analyze further data. If typed ‘y’ then users can analyze next set of data.
 
 
